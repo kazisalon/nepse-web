@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "./ThemeToggle";
 
 const links = [
   { href: "/", label: "Dashboard" },
@@ -59,6 +60,7 @@ export function Navbar() {
         </form>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <button
             type="button"
             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/70 text-black/70 hover:bg-black/5 dark:border-white/15 dark:bg-black/20 dark:text-white/70 dark:hover:bg-white/10"

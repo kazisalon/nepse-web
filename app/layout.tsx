@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { TradingProvider } from "@/components/TradingProvider";
@@ -24,15 +25,21 @@ export const metadata: Metadata = {
   keywords: ["NEPSE stock price", "share price Nepal", "NEPSE live", "NEPSELab", "virtual trading Nepal", "NEPSE"],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get("nepselab_theme")?.value;
+  const theme = themeCookie == "dark" ? "dark" : "light";
+  const isDark = theme === "dark";
+
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased${isDark ? " dark" : ""}`}
+      style={{ colorScheme: theme }}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
