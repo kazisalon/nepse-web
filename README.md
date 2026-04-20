@@ -47,7 +47,13 @@ This MVP uses two layers of caching:
 npm install
 ```
 
-### 2) Run UI + Python function together (recommended)
+### 2) Verify Python dependencies are installed (for live NEPSE data locally)
+
+```bash
+py -m pip install -r requirements.txt
+```
+
+### 3) Run UI + Python function together (for live NEPSE data locally)
 
 ```bash
 npm run dev
@@ -55,14 +61,24 @@ npm run dev
 
 Open http://localhost:3000
 
-This runs:
+This script runs both services:
+- **UI**: Next.js dev server at `http://localhost:3000`
+- **NEPSE API**: Local Python server at `http://127.0.0.1:8001`
 
-- Next.js dev server at `http://localhost:3000`
-- Local Python dev server at `http://127.0.0.1:8001`
+A Next.js Route Handler at [`app/api/nepse/route.ts`](file:///c:/Users/User/Desktop/2025/nepse-web/app/api/nepse/route.ts) proxies requests from `/api/nepse` to the local Python server in development.
 
-During development, the Next.js dev server proxies `/api/nepse` to the local Python server via a rewrite in [`next.config.ts`](file:///c:/Users/User/Desktop/2025/nepse-web/next.config.ts).
+### 4) Troubleshooting (if you see demo data locally)
 
-### 3) Run UI only (no Python function)
+If the UI still shows "You’re viewing demo data" after running `npm run dev`:
+1. **Make sure Python server is running** – check terminal logs for `127.0.0.1:8001`
+2. **Test the Python server directly** (open http://127.0.0.1:8001/api/nepse in your browser or curl/Invoke-WebRequest)
+3. **Run separately if needed**:
+   - Terminal 1: `npm run dev:ui`
+   - Terminal 2: `py -B api/nepse.py --port 8001`
+
+### 5) Run UI only (demo data only)
+
+If you want to skip the Python server entirely:
 
 ```bash
 npm run dev:ui

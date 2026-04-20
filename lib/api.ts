@@ -2,6 +2,17 @@ import { mockStocks } from "./mockData";
 import type { NepseApiResponse, NepseStock } from "./types";
 import { normalizeSymbol } from "./utils";
 
+function getBaseUrl() {
+  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
+  if (typeof window !== "undefined") return window.location.origin;
+  return "http://localhost:3000";
+}
+
+function toAbsoluteUrl(path: string) {
+  const base = getBaseUrl();
+  return new URL(path, base).toString();
+}
+
 export type NepseFetchMeta = {
   source: "live" | "mock";
   cached?: boolean;
@@ -16,7 +27,7 @@ async function fetchJsonWithTimeout<T>(input: string, init: RequestInit & { time
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(input, { ...init, signal: controller.signal });
+    const res = await fetch(toAbsoluteUrl(input), { ...init, signal: controller.signal });
     if (!res.ok) throw new Error(`NEPSE API failed (${res.status})`);
     return (await res.json()) as T;
   } finally {

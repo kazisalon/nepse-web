@@ -19,6 +19,7 @@ _ALLOWED_METHODS = {
     "get_all_securities",
     "get_brokers",
     "get_company_disclosures",
+    "get_head_indices",
     "get_indices_history",
     "get_info_officers",
     "get_live_indices",
@@ -27,7 +28,10 @@ _ALLOWED_METHODS = {
     "get_market_summary",
     "get_market_summary_history",
     "get_nepse_index",
+    "get_news",
     "get_notices",
+    "get_security_detail",
+    "get_sector_detail",
     "get_sector_indices",
     "get_sectors",
     "get_sectorwise_summary",
@@ -37,11 +41,18 @@ _ALLOWED_METHODS = {
     "get_ticker_contact",
     "get_ticker_info",
     "get_ticker_price_history",
+    "get_today_market_summary",
     "get_today_price",
     "get_top_by_trade_quantity",
+    "get_top_gainer",
+    "get_top_loser",
     "get_top_stocks",
+    "get_top_trade",
+    "get_top_transaction",
+    "get_top_turnover",
     "get_trading_average",
     "is_market_open",
+    "is_trading_day",
     "register_endpoint",
 }
 
@@ -227,18 +238,20 @@ def _default_args_kwargs_for_method(method, params):
     kwargs = {}
 
     symbol = _get_first(params, "symbol")
-    if symbol and method in {"get_ticker_info", "get_ticker_contact", "get_ticker_price_history"}:
+    if symbol and method in {"get_ticker_info", "get_ticker_contact", "get_ticker_price_history", "get_security_detail"}:
         args = [str(symbol).strip().upper()]
 
     index_id = _get_first(params, "indexId") or _get_first(params, "index_id")
-    if index_id and method == "get_indices_history":
-        kwargs["index_id"] = int(index_id)
-    if index_id and method == "get_live_indices":
+    if index_id and method in {"get_indices_history", "get_live_indices", "get_head_indices"}:
         kwargs["index_id"] = int(index_id)
 
     ticker = _get_first(params, "ticker")
     if ticker and method == "get_security_daily_trade_stat":
         args = [str(ticker).strip().upper()]
+
+    sector = _get_first(params, "sector")
+    if sector and method == "get_sector_detail":
+        args = [str(sector)]
 
     category = _get_first(params, "category")
     if category and method == "get_top_stocks":
@@ -257,7 +270,7 @@ def _default_args_kwargs_for_method(method, params):
 
     business_date = _get_first(params, "business_date") or _get_first(params, "businessDate")
     if business_date:
-        if method in {"get_today_price", "get_trading_average"}:
+        if method in {"get_today_price", "get_trading_average", "get_today_market_summary"}:
             kwargs["business_date"] = business_date
 
     start_date = _get_first(params, "start_date") or _get_first(params, "startDate")

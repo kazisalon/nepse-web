@@ -36,13 +36,18 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <div className="pointer-events-none fixed inset-0 -z-10">
+          <div className="absolute inset-0 bg-zinc-50 dark:bg-zinc-950" />
+          <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 via-transparent to-cyan-500/10" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(16,185,129,0.18),transparent_40%),radial-gradient(circle_at_80%_0%,rgba(6,182,212,0.14),transparent_35%)]" />
+        </div>
         <TradingProvider>
           <Navbar />
-          <main className="flex-1 bg-zinc-50 px-4 py-8 text-black dark:bg-black dark:text-white">
-            <div className="mx-auto w-full max-w-6xl">{children}</div>
+          <main className="flex-1 px-4 py-8 text-black dark:text-white">
+            <div className="mx-auto w-full max-w-7xl">{children}</div>
           </main>
-          <footer className="border-t border-black/5 bg-white/80 px-4 py-6 text-sm text-black/60 dark:border-white/10 dark:bg-black/40 dark:text-white/60">
-            <div className="mx-auto w-full max-w-6xl">
+          <footer className="border-t border-black/5 bg-white/70 px-4 py-6 text-sm text-black/60 backdrop-blur dark:border-white/10 dark:bg-black/40 dark:text-white/60">
+            <div className="mx-auto w-full max-w-7xl">
               NEPSELab — live market data platform. Simulator is one feature.
             </div>
           </footer>
