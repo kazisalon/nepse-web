@@ -3,8 +3,8 @@ import { TradePanel } from "@/components/TradePanel";
 import { fetchNepseStocks } from "@/lib/api";
 
 export const metadata: Metadata = {
-  title: "Simulator (Virtual Buy/Sell)",
-  description: "Simulate buy and sell trades with virtual money using live NEPSE stock price data.",
+  title: "Practice",
+  description: "Practice buy/sell flows with virtual money. An optional NEPSELab tool alongside live market data and analysis.",
 };
 
 export default async function TradePage() {
@@ -13,9 +13,9 @@ export default async function TradePage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Simulator</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Practice</h1>
         <p className="text-sm text-black/70 dark:text-white/70">
-          One NEPSELab feature: simulate buy/sell with virtual money. Balance and holdings update locally.
+          Optional tool: practice buy/sell with virtual money. Your balance and holdings update locally.
         </p>
       </header>
       <TradePanel stocks={stocks} />

@@ -19,7 +19,10 @@ async function StatCard({ label, value, sub, children }: { label: string; value?
   );
 }
 
-export default async function StocksPage() {
+export default async function StocksPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+  const qRaw = typeof searchParams?.q === "string" ? searchParams.q : undefined;
+  const q = qRaw ? qRaw.trim().toUpperCase() : "";
+
   const [
     stocksRes,
     marketOpenRes,
@@ -52,6 +55,7 @@ export default async function StocksPage() {
 
   const stocks = stocksRes.items;
   const stocksMeta = stocksRes.meta;
+  const filteredStocks = q ? stocks.filter((s) => s.symbol.toUpperCase().includes(q) || (s.securityName ?? "").toUpperCase().includes(q)) : stocks;
   const marketOpen = marketOpenRes.data;
   const isTradingDay = isTradingDayRes.data;
 
@@ -88,6 +92,12 @@ export default async function StocksPage() {
           Live NEPSE market dashboard: prices, movers, indices, notices, and more—powered by serverless Python (cached).
         </p>
       </header>
+
+      {q ? (
+        <div className="rounded-2xl border border-black/5 bg-white/70 p-4 text-sm text-black/70 backdrop-blur dark:border-white/10 dark:bg-black/30 dark:text-white/70">
+          Showing results for <span className="font-medium">{qRaw}</span> · {filteredStocks.length} matches
+        </div>
+      ) : null}
 
       {stocksMeta.source === "mock" ? (
         <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5 text-sm text-amber-900 dark:text-amber-200">
@@ -205,16 +215,16 @@ export default async function StocksPage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">NEPSE Stocks</h2>
-          <Link href="/portfolio" className="text-sm font-medium hover:underline">
-            Simulator
+          <Link href="/trade" className="text-sm font-medium hover:underline">
+            Practice
           </Link>
         </div>
-        {stocks.length === 0 ? (
+        {filteredStocks.length === 0 ? (
           <div className="rounded-2xl border border-black/5 bg-white p-6 text-sm text-black/60 dark:border-white/10 dark:bg-black/30 dark:text-white/60">
             No stock data available.
           </div>
         ) : (
-          <StockTable stocks={stocks} />
+          <StockTable stocks={filteredStocks} />
         )}
       </section>
     </div>

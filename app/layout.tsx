@@ -55,7 +55,7 @@ export default async function RootLayout({
           </main>
           <footer className="border-t border-black/5 bg-white/70 px-4 py-6 text-sm text-black/60 backdrop-blur dark:border-white/10 dark:bg-black/40 dark:text-white/60">
             <div className="mx-auto w-full max-w-7xl">
-              NEPSELab — live market data platform. Simulator is one feature.
+              NEPSELab — live NEPSE market data for tracking, charts, and analysis. Practice trading is optional.
             </div>
           </footer>
         </TradingProvider>

@@ -130,6 +130,36 @@ def _normalize_record(rec):
     return {k: v for k, v in item.items() if v is not None and v != ""}
 
 
+def _normalize_candle(rec):
+    if not isinstance(rec, dict):
+        return None
+
+    time_value = _pick(rec, ["time", "date", "businessDate", "tradeDate", "tradingDate", "dateString"])
+    if time_value is None:
+        time_value = _pick(rec, ["business_date", "trade_date"])
+    if time_value is None:
+        return None
+    time_value = str(time_value).strip()
+    if not time_value:
+        return None
+
+    open_price = _to_float(_pick(rec, ["open", "openPrice", "open_price"]))
+    high = _to_float(_pick(rec, ["high", "highPrice", "high_price"]))
+    low = _to_float(_pick(rec, ["low", "lowPrice", "low_price"]))
+    close_price = _to_float(_pick(rec, ["close", "closePrice", "close_price", "ltp", "LTP"]))
+    volume = _to_int(_pick(rec, ["volume", "totalTradedQuantity", "total_quantity"]))
+
+    if open_price is None or high is None or low is None or close_price is None:
+        return None
+    if high < low:
+        return None
+
+    out = {"time": time_value, "open": open_price, "high": high, "low": low, "close": close_price}
+    if volume is not None:
+        out["volume"] = volume
+    return out
+
+
 def _fetch_today_prices():
     scraper = NepseScraper(verify_ssl=False)
     data = scraper.get_today_price()
@@ -196,6 +226,15 @@ def _normalize_response_data(method, result):
                     if normalized.get("symbol"):
                         items.append(normalized)
         return {"items": items, "data": None}
+
+    if method == "get_ticker_price_history":
+        candles = []
+        if isinstance(result, list):
+            for rec in result:
+                normalized = _normalize_candle(rec)
+                if normalized is not None:
+                    candles.append(normalized)
+        return {"items": None, "data": candles}
 
     return {"items": None, "data": result}
 

@@ -5,7 +5,7 @@ const links = [
   { href: "/", label: "Dashboard" },
   { href: "/stocks", label: "Market" },
   { href: "/portfolio", label: "Portfolio" },
-  { href: "/trade", label: "Simulator" },
+  { href: "/trade", label: "Practice" },
 ] as const;
 
 export function Navbar() {

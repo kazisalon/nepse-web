@@ -2,14 +2,36 @@ import { mockStocks } from "./mockData";
 import type { NepseApiResponse, NepseStock } from "./types";
 import { normalizeSymbol } from "./utils";
 
-function getBaseUrl() {
-  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
+async function getBaseUrl() {
+  const envUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.SITE_URL ||
+    process.env.VERCEL_URL ||
+    process.env.RENDER_EXTERNAL_URL;
+
+  if (envUrl) {
+    if (envUrl.startsWith("http://") || envUrl.startsWith("https://")) return envUrl;
+    return `https://${envUrl}`;
+  }
+
   if (typeof window !== "undefined") return window.location.origin;
+
+  try {
+    const mod = await import("next/headers");
+    const h = await mod.headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host");
+    if (host) {
+      const proto = h.get("x-forwarded-proto") ?? "http";
+      return `${proto}://${host}`;
+    }
+  } catch {}
+
   return "http://localhost:3000";
 }
 
-function toAbsoluteUrl(path: string) {
-  const base = getBaseUrl();
+async function toAbsoluteUrl(path: string) {
+  const base = await getBaseUrl();
   return new URL(path, base).toString();
 }
 
@@ -27,7 +49,8 @@ async function fetchJsonWithTimeout<T>(input: string, init: RequestInit & { time
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(toAbsoluteUrl(input), { ...init, signal: controller.signal });
+    const url = input.startsWith("http://") || input.startsWith("https://") ? input : await toAbsoluteUrl(input);
+    const res = await fetch(url, { ...init, signal: controller.signal });
     if (!res.ok) throw new Error(`NEPSE API failed (${res.status})`);
     return (await res.json()) as T;
   } finally {

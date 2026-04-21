@@ -1,14 +1,37 @@
 import Link from "next/link";
+import { CandlestickChart, type Candle } from "@/components/CandlestickChart";
 import { OrderEntryPanel } from "@/components/OrderEntryPanel";
 import { PortfolioMini } from "@/components/PortfolioMini";
-import { Sparkline } from "@/components/Sparkline";
 import { fetchNepseMethod, fetchNepseStocksResult } from "@/lib/api";
 import type { NepseStock } from "@/lib/types";
 import { clsx, formatNumber, pct } from "@/lib/utils";
 
+function isoDate(d: Date) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function computeStartDate(range: string | undefined) {
+  const now = new Date();
+  const d = new Date(now);
+  if (!range) d.setMonth(d.getMonth() - 6);
+  else if (range === "1m") d.setMonth(d.getMonth() - 1);
+  else if (range === "3m") d.setMonth(d.getMonth() - 3);
+  else if (range === "6m") d.setMonth(d.getMonth() - 6);
+  else if (range === "1y") d.setFullYear(d.getFullYear() - 1);
+  else if (range === "all") d.setFullYear(d.getFullYear() - 3);
+  else d.setMonth(d.getMonth() - 6);
+  return isoDate(d);
+}
+
 export default async function Home({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const sp = searchParams ?? {};
   const requestedSymbol = typeof sp.symbol === "string" ? sp.symbol.trim().toUpperCase() : undefined;
+  const rangeParam = typeof sp.range === "string" ? sp.range : undefined;
+  const startDate = computeStartDate(rangeParam);
+  const endDate = isoDate(new Date());
 
   const [stocksRes, marketOpenRes, topGainerRes, topLoserRes, newsRes] = await Promise.all([
     fetchNepseStocksResult({ limit: 80, allowMockFallback: true }),
@@ -27,6 +50,30 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
   const selected = pickSelectedStock(stocks, requestedSymbol);
   const selectedSymbol = selected?.symbol ?? stocks[0]?.symbol ?? "";
 
+  const historyRes = await fetchNepseMethod<Array<Record<string, unknown>>>({
+    method: "get_ticker_price_history",
+    symbol: selectedSymbol,
+    query: startDate ? { start_date: startDate, end_date: endDate } : undefined,
+  }).catch(async () =>
+    fetchNepseMethod<Array<Record<string, unknown>>>({ method: "get_ticker_price_history", symbol: selectedSymbol }).catch(() => ({ data: undefined }))
+  );
+
+  const candles = Array.isArray(historyRes.data)
+    ? (historyRes.data
+        .map((c): Candle | null => {
+          if (!c || typeof c !== "object") return null;
+          const time = typeof c.time === "string" ? c.time : null;
+          const open = typeof c.open === "number" ? c.open : null;
+          const high = typeof c.high === "number" ? c.high : null;
+          const low = typeof c.low === "number" ? c.low : null;
+          const close = typeof c.close === "number" ? c.close : null;
+          const volume = typeof c.volume === "number" ? c.volume : undefined;
+          if (!time || open === null || high === null || low === null || close === null) return null;
+          return { time, open, high, low, close, volume };
+        })
+        .filter(Boolean) as Candle[])
+    : [];
+
   const topGainer = (topGainerRes.data ?? [])[0];
   const topLoser = (topLoserRes.data ?? [])[0];
   const gSymbol = typeof topGainer?.symbol === "string" ? topGainer.symbol : undefined;
@@ -35,7 +82,6 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
   const lPct = typeof topLoser?.percentageChange === "number" ? topLoser.percentageChange : undefined;
 
   const watchlist = stocks.slice(0, 6);
-  const chart = buildSeries(selected?.ltp ?? 0, selected?.percentChange ?? 0);
   const orderStocks = stocks.slice(0, 80).map((s) => ({ symbol: s.symbol, securityName: s.securityName, ltp: s.ltp }));
 
   return (
@@ -44,7 +90,7 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-            <p className="text-sm text-black/70 dark:text-white/70">Live NEPSE market data, movers, charts, and a simulator for learning.</p>
+            <p className="text-sm text-black/70 dark:text-white/70">Live NEPSE market data for tracking prices, movers, and chart-based analysis.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
@@ -57,7 +103,7 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
               href="/trade"
               className="rounded-full border border-black/10 px-5 py-2.5 text-sm font-medium hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/10"
             >
-              Simulator
+              Practice
             </Link>
             <Link
               href="/portfolio"
@@ -174,20 +220,50 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
 
           <section className="overflow-hidden rounded-2xl border border-black/5 bg-white/70 p-5 backdrop-blur dark:border-white/10 dark:bg-black/30">
             <div className="flex items-center justify-between gap-3">
-              <div className="text-sm font-semibold">Price Chart</div>
-              <div className="text-xs text-black/60 dark:text-white/60">Last moves</div>
+              <div className="text-sm font-semibold">Chart</div>
+              <div className="flex items-center gap-3">
+                <div className="hidden items-center gap-2 md:flex">
+                  {[
+                    { label: "1M", value: "1m" },
+                    { label: "3M", value: "3m" },
+                    { label: "6M", value: "6m" },
+                    { label: "1Y", value: "1y" },
+                    { label: "All", value: "all" },
+                  ].map((r) => {
+                    const active = (rangeParam ?? "all") === r.value;
+                    const href = `/?symbol=${encodeURIComponent(selectedSymbol)}&range=${r.value}`;
+                    return (
+                      <Link
+                        key={r.value}
+                        href={href}
+                        className={
+                          active
+                            ? "rounded-full bg-black px-3 py-1.5 text-xs font-medium text-white dark:bg-white dark:text-black"
+                            : "rounded-full border border-black/10 bg-white/60 px-3 py-1.5 text-xs text-black/80 hover:bg-black/5 dark:border-white/15 dark:bg-black/20 dark:text-white/80 dark:hover:bg-white/10"
+                        }
+                      >
+                        {r.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+                <Link
+                  href={`/stocks/${encodeURIComponent(selectedSymbol)}`}
+                  className="text-xs text-black/60 hover:underline dark:text-white/60"
+                >
+                  Full analysis
+                </Link>
+              </div>
             </div>
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="md:col-span-2">
-                <div className="rounded-xl border border-black/5 bg-white/60 p-4 dark:border-white/10 dark:bg-black/20">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs uppercase tracking-wide text-black/60 dark:text-white/60">{selected?.symbol ?? "—"}</div>
-                    <div className="text-xs text-black/60 dark:text-white/60">{formatNumber(selected?.volume)}</div>
+                {candles.length ? (
+                  <CandlestickChart candles={candles.slice(-80)} height={240} />
+                ) : (
+                  <div className="rounded-xl border border-black/5 bg-white/60 p-6 text-sm text-black/60 dark:border-white/10 dark:bg-black/20 dark:text-white/60">
+                    Candlestick data not available right now.
                   </div>
-                  <div className="mt-4 flex justify-center text-emerald-600 dark:text-emerald-400">
-                    <Sparkline values={chart} width={520} height={160} />
-                  </div>
-                </div>
+                )}
               </div>
               <div className="space-y-3">
                 <div className="rounded-xl border border-black/5 bg-white/60 p-4 dark:border-white/10 dark:bg-black/20">
@@ -246,19 +322,4 @@ function pickSelectedStock(stocks: NepseStock[], requestedSymbol?: string) {
   if (!stocks.length) return undefined;
   if (!requestedSymbol) return stocks[0];
   return stocks.find((s) => s.symbol === requestedSymbol) ?? stocks[0];
-}
-
-function buildSeries(ltp: number, percentChange: number) {
-  const base = Number.isFinite(ltp) && ltp > 0 ? ltp : 100;
-  const delta = Number.isFinite(percentChange) ? percentChange : 0;
-  const drift = base * (delta / 100);
-  const points = 32;
-  const out = [];
-  for (let i = 0; i < points; i++) {
-    const t = i / (points - 1);
-    const wave = Math.sin(t * Math.PI * 2) * base * 0.008;
-    const trend = drift * (t - 0.5);
-    out.push(base + wave + trend);
-  }
-  return out;
 }
