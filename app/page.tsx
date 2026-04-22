@@ -54,9 +54,7 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
     method: "get_ticker_price_history",
     symbol: selectedSymbol,
     query: startDate ? { start_date: startDate, end_date: endDate } : undefined,
-  }).catch(async () =>
-    fetchNepseMethod<Array<Record<string, unknown>>>({ method: "get_ticker_price_history", symbol: selectedSymbol }).catch(() => ({ data: undefined }))
-  );
+  }).catch(() => ({ data: undefined }));
 
   const candles = Array.isArray(historyRes.data)
     ? (historyRes.data

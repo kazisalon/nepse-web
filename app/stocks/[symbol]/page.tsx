@@ -60,9 +60,7 @@ export default async function StockDetailPage({
       method: "get_ticker_price_history",
       symbol: sym,
       query: startDate ? { start_date: startDate, end_date: isoDate(new Date()) } : undefined,
-    }).catch(async () =>
-      fetchNepseMethod<Array<Record<string, unknown>>>({ method: "get_ticker_price_history", symbol: sym }).catch(() => ({ data: undefined }))
-    )) ?? { data: undefined };
+    }).catch(() => ({ data: undefined }))) ?? { data: undefined };
 
   const info = tickerInfoRes.data;
   const security = (info && typeof info === "object" ? (info as Record<string, unknown>).security : undefined) as

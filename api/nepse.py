@@ -229,8 +229,18 @@ def _normalize_response_data(method, result):
 
     if method == "get_ticker_price_history":
         candles = []
-        if isinstance(result, list):
-            for rec in result:
+        series = None
+        if isinstance(result, (list, tuple)):
+            series = result
+        elif isinstance(result, dict):
+            for key in ("content", "data", "items", "results", "result"):
+                v = result.get(key)
+                if isinstance(v, (list, tuple)):
+                    series = v
+                    break
+
+        if isinstance(series, (list, tuple)):
+            for rec in series:
                 normalized = _normalize_candle(rec)
                 if normalized is not None:
                     candles.append(normalized)
